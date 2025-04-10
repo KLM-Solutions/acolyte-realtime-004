@@ -73,11 +73,11 @@ export default function ChatPage() {
       });
     }
     
-    // Fetch API key and start WebRTC connection
+    // Only fetch API key, don't start WebRTC connection
     fetchApiKey();
   }, []);
 
-  // Fetch API key from server
+  // Update the fetchApiKey function to not automatically validate or connect
   async function fetchApiKey() {
     try {
       setIsLoading(true);
@@ -87,18 +87,16 @@ export default function ChatPage() {
       if (data.apiKey) {
         console.log("API key fetched successfully");
         setApiKey(data.apiKey);
-        const isValid = await validateApiKey(data.apiKey);
-        console.log("API key validation after fetch:", isValid);
-        setIsKeyValid(isValid);
-        // Don't start session automatically - wait for button click
+        // Don't validate or connect automatically
+        setIsLoading(false);
       } else {
         console.error('API key not found in response');
         setError('API key not found');
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Error fetching API key:', error);
       setError('Failed to fetch API key');
-    } finally {
       setIsLoading(false);
     }
   }
@@ -333,18 +331,30 @@ export default function ChatPage() {
     }
   }
 
-  const handleChatWithLynn = () => {
-    // Start WebRTC session when Chat with Lynn is clicked
-    if (isKeyValid && !isSessionActive) {
-      startSession(apiKey);
-    }
+  // Update handleChatWithLynn to validate the key and then connect
+  const handleChatWithLynn = async () => {
+    setIsLoading(true);
     
-    setShowAgent(true);
-    setShowHealthInfo(true);
-    
-    // Optionally pause the video if it's still playing
-    if (videoRef.current && !videoRef.current.paused) {
-      videoRef.current.pause();
+    try {
+      // Validate the API key first
+      const isValid = await validateApiKey(apiKey);
+      
+      if (isValid) {
+        // Start WebRTC session when Chat with Lynn is clicked
+        await startSession(apiKey);
+      }
+      
+      setShowAgent(true);
+      setShowHealthInfo(true);
+      
+      // Optionally pause the video if it's still playing
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+    } catch (error) {
+      console.error("Error in handleChatWithLynn:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -441,7 +451,7 @@ export default function ChatPage() {
                       <Button
                         className="bg-teal-600 hover:bg-teal-700 text-white py-3 md:py-4 px-6 md:px-8 rounded-md text-base md:text-lg font-medium w-full"
                         onClick={handleChatWithLynn}
-                        disabled={isLoading || !isKeyValid}
+                        disabled={isLoading}
                       >
                         {isLoading ? "Connecting..." : "Chat with Lynn"}
                       </Button>
