@@ -46,6 +46,9 @@ export default function ChatPage() {
   // Add a new state for tracking if the doubt agent is shown
   const [showDoubtAgent, setShowDoubtAgent] = useState(false)
 
+  // Add a new state to track if we're in the doubt intro mode
+  const [showDoubtIntro, setShowDoubtIntro] = useState(false)
+
   const fullText = "Improve Your Health Literacy"
 
   // Add agent configuration
@@ -358,25 +361,39 @@ export default function ChatPage() {
     }
   };
 
+  // Update the handleAskDoubt function
   const handleAskDoubt = async () => {
     setIsLoading(true);
     
     try {
-      // Show the doubt agent when Ask Doubt is clicked
-      setShowDoubtAgent(true);
-      
-      // Also set showHealthInfo to true to display the same left-side content as "Chat with Lynn"
+      // Show the doubt intro video first instead of immediately showing the agent
+      setShowDoubtIntro(true);
       setShowHealthInfo(true);
+      setShowDoubtAgent(false); // Don't show the agent yet
       
-      // Optionally pause the video if it's still playing
+      // Optionally pause the current video if it's still playing
       if (videoRef.current && !videoRef.current.paused) {
         videoRef.current.pause();
+      }
+      
+      // Reset and play the intro video
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0; // Reset to beginning
+        videoRef.current.muted = false;
+        setMuted(false);
+        videoRef.current.play();
       }
     } catch (error) {
       console.error("Error in handleAskDoubt:", error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Add a function to handle showing the doubt agent after intro
+  const handleShowDoubtAgent = () => {
+    setShowDoubtIntro(false);
+    setShowDoubtAgent(true);
   };
 
   const toggleMute = () => {
@@ -536,10 +553,10 @@ export default function ChatPage() {
         </div>
 
         {/* Right side - video, VoiceAnimation, or AgentChat */}
-        <div className={`w-full ${(showAgent && showHealthInfo) || (showDoubtAgent && showHealthInfo) ? 'md:w-1/2' : 'md:w-1/2'} relative order-1 md:order-2 h-[40vh] ${(showAgent && showHealthInfo) || (showDoubtAgent && showHealthInfo) ? 'h-screen' : 'md:h-full'}`}>
-          {!showAgent && !showDoubtAgent ? (
+        <div className={`w-full ${(showAgent && showHealthInfo) || (showDoubtAgent && showHealthInfo) || (showDoubtIntro && showHealthInfo) ? 'md:w-1/2' : 'md:w-1/2'} relative order-1 md:order-2 h-[40vh] ${(showAgent && showHealthInfo) || (showDoubtAgent && showHealthInfo) || (showDoubtIntro && showHealthInfo) ? 'h-screen' : 'md:h-full'}`}>
+          {!showAgent && !showDoubtAgent && !showDoubtIntro ? (
             <>
-              {/* Video element */}
+              {/* Initial video element */}
               <video 
                 ref={videoRef}
                 className="w-full h-full object-cover" 
@@ -549,7 +566,7 @@ export default function ChatPage() {
                 onEnded={handleVideoEnd}
                 playsInline
               >
-                <source src="/Lynn.mp4" type="video/mp4" />
+                <source src="/Acolyte-standup.mp4" type="video/mp4" />
               </video>
               
               {/* Controls */}
@@ -568,6 +585,46 @@ export default function ChatPage() {
                 </button>
               </div>
             </>
+          ) : showDoubtIntro ? (
+            // Show intro video with Chat with Lynn button overlay for doubt intro
+            <div className="relative w-full h-full">
+              <video 
+                ref={videoRef}
+                className="w-full h-full object-cover" 
+                autoPlay={true}
+                muted={muted}
+                loop={false}
+                playsInline
+              >
+                <source src="/Lynn.mp4" type="video/mp4" />
+              </video>
+              
+              {/* Overlay with Chat with Lynn button */}
+              <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+                <Button
+                  className="bg-pink-600 hover:bg-pink-700 text-white py-3 px-6 rounded-md text-base font-medium"
+                  onClick={handleShowDoubtAgent}
+                >
+                  Chat with Lynn
+                </Button>
+              </div>
+              
+              {/* Controls */}
+              <div className="absolute top-4 right-4 flex gap-3">
+                <button 
+                  className={`p-2 rounded-full ${muted ? 'bg-gray-200 text-gray-600' : 'bg-white text-teal-600'}`}
+                  onClick={toggleMute}
+                >
+                  <Volume2 size={20} />
+                </button>
+                <button 
+                  className={`p-2 rounded-full ${captionsOn ? 'bg-gray-200 text-gray-600' : 'bg-white text-teal-600'}`}
+                  onClick={toggleCaptions}
+                >
+                  <Subtitles size={20} />
+                </button>
+              </div>
+            </div>
           ) : showDoubtAgent ? (
             // Show AgentChat for Ask Doubt
             <AgentChat 
