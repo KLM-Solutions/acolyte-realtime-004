@@ -358,16 +358,24 @@ export default function ChatPage() {
     }
   };
 
-  const handleAskDoubt = () => {
-    // Show the doubt agent when Ask Doubt is clicked
-    setShowDoubtAgent(true);
+  const handleAskDoubt = async () => {
+    setIsLoading(true);
     
-    // Also set showHealthInfo to true to display the same left-side content as "Chat with Lynn"
-    setShowHealthInfo(true);
-    
-    // Optionally pause the video if it's still playing
-    if (videoRef.current && !videoRef.current.paused) {
-      videoRef.current.pause();
+    try {
+      // Show the doubt agent when Ask Doubt is clicked
+      setShowDoubtAgent(true);
+      
+      // Also set showHealthInfo to true to display the same left-side content as "Chat with Lynn"
+      setShowHealthInfo(true);
+      
+      // Optionally pause the video if it's still playing
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+    } catch (error) {
+      console.error("Error in handleAskDoubt:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
